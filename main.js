@@ -21,42 +21,54 @@ Object.values(sliders).forEach(v => v.addEventListener("input", () => {
 // cube manipulation
 
 const X_AXIS = "x", Y_AXIS = "y", Z_AXIS = "z";
+class AxisVector {
+  constructor(axis, magnitude) {
+    this.axis = axis;
+    this.magnitude = magnitude;
+  }
+}
+let crossProduct = (v1, v2) => { // ! for AxisVectors only
+  const ring = [X_AXIS, Y_AXIS, Z_AXIS];
+  let axis = ring.find(v => ![v1.axis, v2.axis].includes(v));
+  let magnitudeModifier = ring[(ring.indexOf(v1.axis) + 1) % ring.length] == v2.axis ? 1 : -1;
+  return new AxisVector(axis, v1.magnitude * v2.magnitude * magnitudeModifier);
+};
+
 class Move {
-  constructor(normalAxis, offset, direction) {
-    this.normal = normalAxis;
-    this.offset = offset;
-    this.direction = direction;
+  constructor(normalAxis, offset, rotation) {
+    this.normal = new AxisVector(normalAxis, offset);
+    this.rotation = rotation;
   }
 
   reversed() {
-    return new Move(this.normal, this.offset, -this.direction);
+    return new Move(this.normal.axis, this.normal.magnitude, -this.rotation);
   }
 }
 
 let faceInfoArr = [
-  { face: "front",  normal: Z_AXIS,  direction:  1 },
-  { face: "back",   normal: Z_AXIS,  direction: -1 },
-  { face: "right",  normal: X_AXIS,  direction:  1 },
-  { face: "left",   normal: X_AXIS,  direction: -1 },
-  { face: "top",    normal: Y_AXIS,  direction:  1 },
-  { face: "down",   normal: Y_AXIS,  direction: -1 },
+  { face: "front",  normal: new AxisVector(Z_AXIS,  1) },
+  { face: "back",   normal: new AxisVector(Z_AXIS, -1) },
+  { face: "right",  normal: new AxisVector(X_AXIS,  1) },
+  { face: "left",   normal: new AxisVector(X_AXIS, -1) },
+  { face: "top",    normal: new AxisVector(Y_AXIS,  1) },
+  { face: "down",   normal: new AxisVector(Y_AXIS, -1) },
 ];
 
 const defaultRing = [0, 1, 3, 2];
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
 let enact = move => {
   for (let faceInfo of faceInfoArr) {
-    if (faceInfo.normal === move.normal) { // parallel plane
+    if (faceInfo.normal.axis === move.normal.axis) { // parallel plane
       // continue if planes are not equal
-      if (move.offset * faceInfo.direction != maxCubeOffset) continue;
+      if (move.normal.magnitude * faceInfo.normal.magnitude != maxCubeOffset) continue;
 
       // perform a walk of each "ring" on the face, exchanging elements
       // todo generalise for multiple rings (2x2 has only one ring)
 
       let faceElements = document.getElementById(faceInfo.face).children;
 
-      let ring = defaultRing;
-      if (faceInfo.direction * move.direction < 0) ring.reverse();
+      let ring = [...defaultRing];
+      if (faceInfo.normal.magnitude * move.rotation < 0) ring.reverse();
 
       let temp = faceElements[ring[0]].className;
       for (let i = 1; i < ring.length; i++)
