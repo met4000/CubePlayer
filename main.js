@@ -16,3 +16,7 @@ updateCubeTransform();
 [...document.getElementsByClassName("ib")].forEach(
   button => button.addEventListener("click", () => perform(button.value))
 );
+
+let toggleButtons = () => [...document.getElementsByClassName("ib")].forEach(
+  button => button.style.display = button.style.display == "none" ? "inline" : "none"
+);

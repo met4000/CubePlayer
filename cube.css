@@ -50,7 +50,7 @@
 .face > input {
   --ib-unit: 1.75em;
 
-  display: inline block;
+  display: none; /* inline */
   position: absolute;
   height: var(--ib-unit);
   width: var(--ib-unit);
