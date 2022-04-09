@@ -1,0 +1,67 @@
+#cube {
+  --unit: 100px;
+  --size: 2;
+  --gap: 2px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--unit) * var(--size) * 1.414);
+  height: calc(var(--unit) * var(--size) * 1.414);
+  transform-style: preserve-3d;
+}
+
+#cube * {
+  transition: transform 0.5s;
+}
+
+.face {
+  display: grid;
+  gap: var(--gap);
+  background-color: black;
+  grid-template-columns: repeat(var(--size), var(--unit));
+  position: absolute;
+
+  --zOffset: calc((var(--unit) * var(--size) + var(--gap)) / 2)
+}
+.face > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--unit);
+  height: var(--unit);
+  backface-visibility: inherit;
+  font-size: 30px;
+  color: #fff;
+}
+
+.front {
+  transform: translateZ(var(--zOffset));
+}
+
+.back {
+  transform: rotateY(180deg) translateZ(var(--zOffset));
+}
+
+.right {
+  transform: rotateY(90deg) translateZ(var(--zOffset));
+}
+
+.left {
+  transform: rotateY(-90deg) translateZ(var(--zOffset));
+}
+
+.top {
+  transform: rotateX(90deg) translateZ(var(--zOffset));
+}
+
+.bottom {
+  transform: rotateX(-90deg) translateZ(var(--zOffset));
+}
+
+.blue   { background: blue;   }
+.green  { background: green;  }
+.red    { background: red;    }
+.orange { background: orange; }
+.yellow { background: yellow; }
+.white  { background: white;  }
