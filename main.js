@@ -185,3 +185,13 @@ let perform = (str, options = undefined) => {
     }
   }
 };
+
+// U, L, D, R, F, B
+let rotate = (str, options = undefined) => perform(str, { ...options, notationSet: options?.notationSet ?? {
+  R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
+  L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
+  U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
+  D: [new Move(X_AXIS,  1, -1), new Move(X_AXIS, -1,  1)],
+  F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
+  B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
+}});
