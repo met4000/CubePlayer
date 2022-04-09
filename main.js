@@ -126,7 +126,7 @@ let enact = move => {
         reversed = move.normal.magnitude === 1;
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          reversed = fmProduct.magnitude === 1;
+          reversed = fmProduct.magnitude === -1;
         } else {
           reversed = move.normal.magnitude === -1;
         }
@@ -140,8 +140,9 @@ let enact = move => {
     }
   }
 
-  console.log(newCellElements);
-  console.log(newCellIndexes);
+  // * debug
+  // console.log(newCellElements);
+  // console.log(newCellIndexes);
 
   for (let faceName of Object.keys(newCellElements)) {
     let faceElements = [...document.getElementById(faceName).children];
