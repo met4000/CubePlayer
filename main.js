@@ -62,7 +62,8 @@ let faceArr = [
 const defaultRing = [0, 1, 3, 2];
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
 let enact = move => {
-  let newCells = {}; // e.g. { front: [blue, red] }
+  let newCellElements = {}; // e.g. { front: [blue, red] }
+  let newCellIndexes = {}; // e.g. { front: [0, 2] }
 
   for (let face of faceArr) {
     if (face.normal.axis === move.normal.axis) { // parallel plane
@@ -75,55 +76,87 @@ let enact = move => {
       let faceElements = document.getElementById(face.name).children;
 
       let ring = [...defaultRing];
-      if (face.normal.magnitude * move.rotation < 0) ring.reverse();
+      if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
 
       let temp = faceElements[ring[0]].className;
       for (let i = 1; i < ring.length; i++)
         faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
       faceElements[ring[ring.length - 1]].className = temp;
     } else { // intersecting plane
-      let faceElements = document.getElementById(face.name).children;
-
-      let op = (a, b) => undefined;
-      if (crossProduct(face.normal, move.normal.mapMag(m => Math.abs(m))).magnitude < 0) {
-        op = (a, b) => a % b;
-      } else {
-        op = (a, b) => Math.floor(a / b);
-      }
+      let faceElements = [...document.getElementById(face.name).children];
 
       let fmProduct = crossProduct(face.normal, move.normal);
 
-      // "invert" around size (e.g. size = 4 => 3 becomes 0, 2 becomes 1) if fmProduct > 0
-      let appliedOp = (i, c) => op(i, cubeSize) == c(maxCubeOffset - move.normal.magnitude);
-      let check = i => false;
-      if (fmProduct.magnitude > 0) {
-        check = i => appliedOp(i, n => cubeSize - 1 - n);
+      // ! todo: maths, rather than hard-code
+      let op = n => undefined;
+      if ({
+        [X_AXIS]: { [Y_AXIS]: false, [Z_AXIS]: true  },
+        [Y_AXIS]: { [X_AXIS]: true,  [Z_AXIS]: false },
+        [Z_AXIS]: { [Y_AXIS]: false, [X_AXIS]: true  },
+      }[face.normal.axis][move.normal.axis]) {
+        op = n => n % cubeSize; // vertical (wrt 0 top-left)
       } else {
-        check = i => appliedOp(i, n => n);
+        op = n => Math.floor(n / cubeSize); // horizontal (wrt 0 top-left)
       }
+
+      // ! todo: generalise to > 2x2 (i.e. n in {0..size-1})
+      let n = undefined;
+      if (move.normal.axis === Y_AXIS) {
+        n = move.normal.magnitude === -1 ? 1 : 0;
+      } else if (face.normal.axis === Y_AXIS) {
+        if (move.normal.axis === X_AXIS) {
+          n = fmProduct.magnitude === -1 ? 1 : 0;
+        } else {
+          n = move.normal.magnitude === -1 ? 0 : 1;
+        }
+      } else {
+        n = fmProduct.magnitude === -1 ? 0 : 1;
+      }
+
+      let check = i => op(i) === n;
 
       let nextFace = fmProduct.mapMag(m => m * -move.rotation);
 
       // guaranteed to be in order, but may need to be reversed
-      let movingElements = [...faceElements].filter((_, i) => check(i));
-      if (nextFace.magnitude > 0) movingElements.reverse(); // ... reverse if needed
+      let movingElementPairs = faceElements.map((v, i) => ({ v, i })).filter(({ v, i }) => check(i));
+      
+      // ! todo: maths, rather than hard-code
+      let reversed = undefined;
+      if (move.normal.axis === Y_AXIS) {
+        reversed = move.normal.magnitude === 1;
+      } else if (face.normal.axis === Y_AXIS) {
+        if (move.normal.axis === X_AXIS) {
+          reversed = fmProduct.magnitude === 1;
+        } else {
+          reversed = move.normal.magnitude === -1;
+        }
+      } else {
+        reversed = fmProduct.magnitude === 1;
+      }
+      if (reversed) movingElementPairs.reverse();
 
-      newCells[faceArr.find(v => v.normal.equals(nextFace)).name] = movingElements;
+      newCellElements[faceArr.find(v => v.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
+      newCellIndexes[face.name] = movingElementPairs.map(({ _, i }) => i);
     }
   }
 
-  for (let [name, elements] of Object.entries(newCells)) {
-    // todo
+  console.log(newCellElements);
+  console.log(newCellIndexes);
+
+  for (let faceName of Object.keys(newCellElements)) {
+    let faceElements = [...document.getElementById(faceName).children];
+
+    newCellIndexes[faceName].forEach((v, i) => faceElements[v].className = newCellElements[faceName][i]);
   }
 };
 
 let defaultNotation = { // ! only for a 2x2 (or 3x3)
   R: [new Move(X_AXIS,  1, -1)],
-  L: [new Move(X_AXIS, -1,  1)],
+  L: [new Move(X_AXIS, -1, -1)],
   U: [new Move(Y_AXIS,  1, -1)],
-  D: [new Move(Y_AXIS, -1,  1)],
+  D: [new Move(Y_AXIS, -1, -1)],
   F: [new Move(Z_AXIS,  1, -1)],
-  B: [new Move(Z_AXIS, -1,  1)],
+  B: [new Move(Z_AXIS, -1, -1)],
 };
 
 let perform = (str, options = undefined) => {

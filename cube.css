@@ -11,10 +11,6 @@
   transform-style: preserve-3d;
 }
 
-#cube * {
-  transition: transform 0.5s;
-}
-
 .face {
   display: grid;
   gap: var(--gap);
@@ -35,12 +31,12 @@
   color: #fff;
 }
 
-#front  { transform:                  translateZ(var(--zOffset)); }
-#back   { transform: rotateY(180deg)  translateZ(var(--zOffset)); }
-#right  { transform: rotateY(90deg)   translateZ(var(--zOffset)); }
-#left   { transform: rotateY(-90deg)  translateZ(var(--zOffset)); }
-#top    { transform: rotateX(90deg)   translateZ(var(--zOffset)); }
-#down   { transform: rotateX(-90deg)  translateZ(var(--zOffset)); }
+#front  { transform:                                   translateZ(var(--zOffset)); }
+#back   { transform: rotateY(180deg)                   translateZ(var(--zOffset)); }
+#right  { transform: rotateY(90deg)                    translateZ(var(--zOffset)); }
+#left   { transform: rotateY(-90deg)                   translateZ(var(--zOffset)); }
+#top    { transform: rotateX(90deg)                    translateZ(var(--zOffset)); }
+#down   { transform: rotateX(-90deg)  rotateZ(180deg)  translateZ(var(--zOffset)); }
 
 .blue   { background: blue;   }
 .green  { background: green;  }
