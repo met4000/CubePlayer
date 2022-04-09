@@ -44,3 +44,27 @@
 .orange { background: orange; }
 .yellow { background: yellow; }
 .white  { background: white;  }
+
+
+/* buttons */
+.face > input {
+  display: inline block;
+  position: absolute;
+  height: 1.5em;
+  width: 1.5em;
+  color: black;
+  font-size: 15px;
+  opacity: 70%;
+
+  --float: calc((var(--unit) - 1.5em) / 2)
+}
+
+input.ib_left   { left:   0%; }
+input.ib_right  { right:  0%; }
+input.ib_top    { top:    0%; }
+input.ib_bottom { bottom: 0%; }
+
+input.ib_left_f   { left:   var(--float); }
+input.ib_right_f  { right:  var(--float); }
+input.ib_top_f    { top:    var(--float); }
+input.ib_bottom_f { bottom: var(--float); }

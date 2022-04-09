@@ -18,10 +18,19 @@
   <div class="containerWrapper">
     <div class="container">
       <div class="grid">
-        <div class="grid_tl"><input id="slider_z" min="-90" max="90" step="15" type="range"></div>
+        <div class="grid_tl"><input id="slider_z" min="-90" max="90" step="15" value="0" type="range"></div>
         <div class="grid_c">
           <div id="cube">
             <div id="front" class="face">
+              <input type="button" class="ib ib_left_f ib_top" value="L'">
+              <input type="button" class="ib ib_left_f ib_bottom" value="L">
+              <input type="button" class="ib ib_right_f ib_top" value="R">
+              <input type="button" class="ib ib_right_f ib_bottom" value="R'">
+              <input type="button" class="ib ib_top_f ib_right" value="U'">
+              <input type="button" class="ib ib_top_f ib_left" value="U">
+              <input type="button" class="ib ib_bottom_f ib_right" value="D">
+              <input type="button" class="ib ib_bottom_f ib_left" value="D'">
+
               <div class="blue"></div>
               <div class="blue"></div>
               <div class="blue"></div>
@@ -34,12 +43,18 @@
               <div class="green"></div>
             </div>
             <div id="right" class="face">
+              <input type="button" class="ib ib_left_f ib_top" value="F'">
+              <input type="button" class="ib ib_left_f ib_bottom" value="F">
+
               <div class="red"></div>
               <div class="red"></div>
               <div class="red"></div>
               <div class="red"></div>
             </div>
             <div id="left" class="face">
+              <input type="button" class="ib ib_right_f ib_top" value="F">
+              <input type="button" class="ib ib_right_f ib_bottom" value="F'">
+
               <div class="orange"></div>
               <div class="orange"></div>
               <div class="orange"></div>
@@ -59,11 +74,12 @@
             </div>
           </div>
         </div>
-        <div class="grid_cr"><input id="slider_x" min="-135" max="135" step="15" type="range"></div>
-        <div class="grid_b"><input id="slider_y" min="-135" max="135" step="15" type="range"></div>
+        <div class="grid_cr"><input id="slider_x" min="-135" max="135" step="15" value="-30" type="range"></div>
+        <div class="grid_b"><input id="slider_y" min="-135" max="135" step="15" value="-30" type="range"></div>
       </div>
     </div>
   </div>
   <script src="main.js"></script>
+  <script src="cube.js"></script>
 </body>
 </html>
