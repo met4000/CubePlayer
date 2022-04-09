@@ -14,5 +14,5 @@ updateCubeTransform();
 
 // perform() defined in cube.js
 [...document.getElementsByClassName("ib")].forEach(
-  v => v.addEventListener("click", e => perform(e.target.value))
+  button => button.addEventListener("click", () => perform(button.value))
 );

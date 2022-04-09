@@ -1,5 +1,5 @@
 #cube {
-  --unit: 100px;
+  --unit: 120px;
   --size: 2;
   --gap: 2px;
 
@@ -48,16 +48,20 @@
 
 /* buttons */
 .face > input {
+  --ib-unit: 1.75em;
+
   display: inline block;
   position: absolute;
-  height: 1.5em;
-  width: 1.5em;
+  height: var(--ib-unit);
+  width: var(--ib-unit);
   color: black;
   font-size: 15px;
   opacity: 70%;
 
-  --float: calc((var(--unit) - 1.5em) / 2)
+  --float: calc((var(--unit) - var(--ib-unit)) / 2);
+  --center: calc((var(--unit) * var(--size) + var(--gap) * (var(--size) - 1) - var(--ib-unit)) / 2);
 }
+#down > input { transform: rotateZ(180deg); }
 
 input.ib_left   { left:   0%; }
 input.ib_right  { right:  0%; }
@@ -68,3 +72,8 @@ input.ib_left_f   { left:   var(--float); }
 input.ib_right_f  { right:  var(--float); }
 input.ib_top_f    { top:    var(--float); }
 input.ib_bottom_f { bottom: var(--float); }
+
+input.ib_left_c   { left:   0%; top:  var(--center); }
+input.ib_right_c  { right:  0%; top:  var(--center); }
+input.ib_top_c    { top:    0%; left: var(--center); }
+input.ib_bottom_c { bottom: 0%; left: var(--center); }
