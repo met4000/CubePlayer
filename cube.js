@@ -1,5 +1,25 @@
-const cubeSize = 2; // todo
+const cubeSize = 4; // todo: add function to change cube size
 const maxCubeOffset = Math.floor(cubeSize / 2);
+document.getElementById("cube").style.setProperty("--size", cubeSize);
+
+
+// * setup cube cells *
+
+const faceMap = {
+  front:  `<div class="blue"></div>`,
+  back:   `<div class="green"></div>`,
+  right:  `<div class="red"></div>`,
+  left:   `<div class="orange"></div>`,
+  top:    `<div class="yellow"></div>`,
+  down:   `<div class="white"></div>`,
+};
+[...document.getElementsByClassName("face")].forEach(face => {
+  let cellContainer = face.getElementsByClassName("cellContainer")[0];
+  cellContainer.innerHTML = Array(cubeSize * cubeSize).fill(faceMap[face.id]).join("");
+});
+
+
+// * cube logic *
 
 const X_AXIS = "x", Y_AXIS = "y", Z_AXIS = "z";
 class AxisVector {
@@ -11,14 +31,17 @@ class AxisVector {
   mapAxis(f = (a, m) => a) { return new AxisVector(f(this.axis, this.magnitude), this.magnitude); }
   mapMag(f = (m, a) => m) { return new AxisVector(this.axis, f(this.magnitude, this.axis)); }
 
+  // * note: both magnitude === 0 =/=> equal
   equals(v) { return this.axis === v.axis && this.magnitude === v.magnitude; }
+
+  toMove(rotation) { return new Move(this.axis, this.magnitude, rotation); }
 }
-let crossProduct = (v1, v2) => { // ! for AxisVectors only
+function crossProduct(v1, v2) { // ! for AxisVectors only
   const ring = [X_AXIS, Y_AXIS, Z_AXIS];
   let axis = ring.find(v => ![v1.axis, v2.axis].includes(v));
   let magnitudeModifier = ring[(ring.indexOf(v1.axis) + 1) % ring.length] == v2.axis ? 1 : -1;
   return new AxisVector(axis, v1.magnitude * v2.magnitude * magnitudeModifier);
-};
+}
 
 class Move {
   constructor(normalAxis, offset, rotation) {
@@ -40,9 +63,35 @@ let faceArr = [
   { name: "down",   normal: new AxisVector(Y_AXIS, -1) },
 ];
 
-const defaultRing = [0, 1, 3, 2];
+function addPair(p1, p2) { return [p1[0] + p2[0], p1[1] + p2[1]]; }
+
+function _checkPosBounds(p) { return Math.min(...p) >= 0 && Math.max(...p) < cubeSize; }
+function generateRings() {
+  let rings = [], grid = {};
+  
+  // traverse the grid, assigning indices
+  for (let ringNumber = 0, pos = [0, 0], delta = [1, 0]; grid[pos] === undefined; pos = addPair(pos, delta)) {
+    if (rings[ringNumber] === undefined) rings[ringNumber] = [];
+    
+    let i = pos[0] + pos[1] * cubeSize; // convert pos to grid index
+    rings[ringNumber].push(i); // add to ring
+    grid[pos] = ringNumber; // mark as visited
+
+    // update direction if "crashing"
+    let newPos = addPair(pos, delta);
+    if (!_checkPosBounds(newPos) || grid[newPos] !== undefined) {
+      delta = [-delta[1], delta[0]]; // right rotation by 90 deg
+      if (grid[newPos] === ringNumber) ringNumber++; // move onto the next ring
+    }
+  }
+
+  return rings;
+}
+let cubeRings = generateRings();
+
+function _getFaceElements(name) { return [...document.querySelectorAll(`#${name} > .cellContainer > *`)]; }
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
-let enact = move => {
+function enact(move) {
   let newCellElements = {}; // e.g. { front: [blue, red] }
   let newCellIndexes = {}; // e.g. { front: [0, 2] }
 
@@ -54,17 +103,20 @@ let enact = move => {
       // perform a walk of each "ring" on the face, exchanging elements
       // todo generalise for multiple rings (2x2 has only one ring)
 
-      let faceElements = document.getElementById(face.name).getElementsByTagName("div");
+      let faceElements = _getFaceElements(face.name);
 
-      let ring = [...defaultRing];
-      if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
+      for (let [...ring] of cubeRings) {
+        if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
 
-      let temp = faceElements[ring[0]].className;
-      for (let i = 1; i < ring.length; i++)
-        faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
-      faceElements[ring[ring.length - 1]].className = temp;
+        for (let r = 0, r_max = ring.length / 4; r < r_max; r++) {
+          let temp = faceElements[ring[0]].className;
+          for (let i = 1; i < ring.length; i++)
+            faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
+          faceElements[ring[ring.length - 1]].className = temp;
+        }
+      }
     } else { // intersecting plane
-      let faceElements = [...document.getElementById(face.name).getElementsByTagName("div")];
+      let faceElements = _getFaceElements(face.name);
 
       let fmProduct = crossProduct(face.normal, move.normal);
 
@@ -80,43 +132,42 @@ let enact = move => {
         op = n => Math.floor(n / cubeSize); // horizontal (wrt 0 top-left)
       }
 
-      // ! todo: generalise to > 2x2 (i.e. n in {0..size-1})
-      let n = undefined;
+      // ! todo: maths, rather than hard-code
+      let n = undefined, nCalc = m => Math.round((cubeSize - 1) / 2 + m - (cubeSize % 2 == 0 ? Math.sign(m) * 0.5 : 0));
       if (move.normal.axis === Y_AXIS) {
-        n = move.normal.magnitude === -1 ? 1 : 0;
+        n = nCalc(-move.normal.magnitude);
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          n = fmProduct.magnitude === -1 ? 1 : 0;
+          n = nCalc(-fmProduct.magnitude);
         } else {
-          n = move.normal.magnitude === -1 ? 0 : 1;
+          n = nCalc(move.normal.magnitude);
         }
       } else {
-        n = fmProduct.magnitude === -1 ? 0 : 1;
+        n = nCalc(fmProduct.magnitude);
       }
-
-      let check = i => op(i) === n;
-
-      let nextFace = fmProduct.mapMag(m => m * -move.rotation);
-
+      
       // guaranteed to be in order, but may need to be reversed
+      let check = i => op(i) === n;
       let movingElementPairs = faceElements.map((v, i) => ({ v, i })).filter(({ v, i }) => check(i));
       
       // ! todo: maths, rather than hard-code
       let reversed = undefined;
       if (move.normal.axis === Y_AXIS) {
-        reversed = move.normal.magnitude === 1;
+        reversed = move.normal.magnitude > 0;
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          reversed = fmProduct.magnitude === -1;
+          reversed = fmProduct.magnitude < 0;
         } else {
-          reversed = move.normal.magnitude === -1;
+          reversed = move.normal.magnitude < 0;
         }
       } else {
-        reversed = fmProduct.magnitude === 1;
+        reversed = fmProduct.magnitude > 0;
       }
       if (reversed) movingElementPairs.reverse();
-
-      newCellElements[faceArr.find(v => v.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
+      
+      let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
+      
+      newCellElements[faceArr.find(face => face.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
       newCellIndexes[face.name] = movingElementPairs.map(({ _, i }) => i);
     }
   }
@@ -126,23 +177,40 @@ let enact = move => {
   // console.log(newCellIndexes);
 
   for (let faceName of Object.keys(newCellElements)) {
-    let faceElements = [...document.getElementById(faceName).getElementsByTagName("div")];
+    let faceElements = _getFaceElements(faceName);
 
     newCellIndexes[faceName].forEach((v, i) => faceElements[v].className = newCellElements[faceName][i]);
   }
+}
+
+let _indexHelper = [];
+for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
+  if (i == maxCubeOffset) p++;
+  _indexHelper.push(p);
+}
+
+let basicNotationAxis = {
+  R: new AxisVector(X_AXIS,  1),
+  L: new AxisVector(X_AXIS, -1),
+  U: new AxisVector(Y_AXIS,  1),
+  D: new AxisVector(Y_AXIS, -1),
+  F: new AxisVector(Z_AXIS,  1),
+  B: new AxisVector(Z_AXIS, -1),
 };
 
-let defaultNotation = { // ! only for a 2x2 (or 3x3)
-  R: [new Move(X_AXIS,  1, -1)],
-  L: [new Move(X_AXIS, -1, -1)],
-  U: [new Move(Y_AXIS,  1, -1)],
-  D: [new Move(Y_AXIS, -1, -1)],
-  F: [new Move(Z_AXIS,  1, -1)],
-  B: [new Move(Z_AXIS, -1, -1)],
-};
+let basicNotation = {}; // * intended for a 2x2 (or 3x3) *
+// standard moves
+Object.entries(basicNotationAxis).forEach(
+  ([k, v]) => basicNotation[k] = [v.mapMag(m => m * maxCubeOffset).toMove(-1)]
+);
+// rotations
+Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
+  ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, -1))
+);
 
-let perform = (str, options = undefined) => {
-  let notationSet = (options?.notationSet ?? defaultNotation);
+// assumes all moves in one long string
+function perform(str, options = undefined) {
+  let notationSet = (options?.notationSet ?? basicNotation);
   let delay = (options?.delay ?? 0);
 
   for (let i = 0; i < str.length; i++) {
@@ -165,29 +233,22 @@ let perform = (str, options = undefined) => {
       // todo: do delay
     }
   }
-};
+}
 
-// U, L, D, R, F, B
-let rotate = (str, options = undefined) => perform(str, { ...options, notationSet: options?.notationSet ?? {
-  R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
-  L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
-  U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
-  D: [new Move(X_AXIS,  1, -1), new Move(X_AXIS, -1,  1)],
-  F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
-  B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
-}});
 
-// _isReversed is private
-let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => {
+/**
+ * @param {*} _isInverted SHOULD NOT BE USED PUBLICLY
+ */
+function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
   // todo split into functions
-  if (!_isReversed) {
+  if (!_isInverted) {
     for (let i = 0; i < str.length; i++) {
       let moveName = str[i];
       let sub = subsGroup[moveName];
 
-      let reversed = false;
-      if (str[i + 1] === "'") { // i.e. reversed
-        reversed = true;
+      let inverted = false;
+      if (str[i + 1] === "'") { // i.e. inverted
+        inverted = true;
         i++;
       }
       
@@ -199,11 +260,11 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       }
 
       if (sub === undefined) {
-        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${inverted?"'":""}${occurrences}`, options);
         continue;
       }
 
-      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, inverted);
     }
   } else {
     for (let i = str.length - 1; i >= 0; i--) {
@@ -214,9 +275,9 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
         i--;
       }
 
-      let reversed = true;
-      if (str[i] === "'") { // i.e. reversed
-        reversed = false;
+      let inverted = true;
+      if (str[i] === "'") { // i.e. inverted
+        inverted = false;
         i--;
       }
 
@@ -224,43 +285,35 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       let sub = subsGroup[moveName];
 
       if (sub === undefined) {
-        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${inverted ? "'" : ""}${occurrences}`, options);
         continue;
       }
 
-      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, inverted);
     }
   }
-};
+}
 
-let helpObj = {
-  help: "help(command: string = undefined) // " +
-        "Displays this help message. If `command` is specified, only " +
-        "displays the help message for the specified command, or an error message if it does not exist.",
-  perform: "perform(str: string, options: Object = undefined) // " +
-           "Performs the sequence `str` on the cube. `options` is an object containing " +
-           "`\"notationSet\"` (defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
-  rotate: "rotate(str: string, options: Object = undefined) // " +
-          "Performs the rotation sequence `str` on the cube. `rotate(...)` is an alias for `perform(...)` " +
-          "under the hood, with the default `\"notationSet\"` changed to one that rotates the cube " +
-          "towards the face specified. `\"F\"` and `\"B\"` rotate the cube clockwise, " +
-          "respective to the face specified.",
-  performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
-               "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
-  toggleButtons: "toggleButtons() // " +
-                 "Toggles the on-cube move buttons on/off. May cause problems when active.",
-};
-let help = command => {
-  if (command !== undefined) { // display specific command help
-    if (helpObj[command] === undefined) {
-      console.log("Command does not exist. Run `help()` for a list of all commands.");
-      return false;
-    }
+// assumes moves in space separated string
+// todo: advanced (3x3/4x4 etc.) notation
+function performAdvanced(str, options = undefined) {
+  let moves = str.split(" ");
 
-    console.log(helpObj[command]);
-  } else { // display all command help
-    Object.values(helpObj).forEach(v => console.log(v));
+  for (let move of moves) {
+    // standard properties
+    let moveName = /^(?:\d+)?([A-Z])[w']{0,2}(?:\d+)?$/.exec(move)[1]; // ! todo: improve stability
+    let inverted = /'/.test(move);
+    let occurrences = (/(\d+)$/.exec(move) ?? [])[1] ?? 1;
+
+    // advanced properties
+    let deep = /w/.test(move);
+    let slice = (/^(\d+)/.exec(move) ?? [])[1] ?? 1;
+
+    let moves = [];
+    for (let i = deep ? 0 : slice - 1; i < slice; i++) moves.push(
+      basicNotationAxis[moveName].mapMag(m => Math.sign(m) * maxCubeOffset - i).toMove(inverted ? 1 : -1)
+    );
+
+    for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
   }
-
-  return true;
-};
+}
