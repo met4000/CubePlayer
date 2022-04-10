@@ -297,21 +297,19 @@ function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
 // assumes moves in space separated string
 // todo: advanced (3x3/4x4 etc.) notation
 function performAdvanced(str, options = undefined) {
-  let moves = str.split(" ");
-
-  for (let move of moves) {
+  for (let move of str.split(" ")) {
     // standard properties
     let moveName = /^(?:\d+)?([A-Z])[w']{0,2}(?:\d+)?$/.exec(move)[1]; // ! todo: improve stability
     let inverted = /'/.test(move);
-    let occurrences = (/(\d+)$/.exec(move) ?? [])[1] ?? 1;
+    let occurrences = parseInt((/(\d+)$/.exec(move) ?? [])[1] ?? 1);
 
     // advanced properties
     let deep = /w/.test(move);
-    let slice = (/^(\d+)/.exec(move) ?? [])[1] ?? 1;
+    let slice = parseInt((/^(\d+)/.exec(move) ?? [])[1] ?? 1);
 
     let moves = [];
     for (let i = deep ? 0 : slice - 1; i < slice; i++) moves.push(
-      basicNotationAxis[moveName].mapMag(m => Math.sign(m) * maxCubeOffset - i).toMove(inverted ? 1 : -1)
+      basicNotationAxis[moveName].mapMag(m => Math.sign(m) * (maxCubeOffset - i)).toMove(inverted ? 1 : -1)
     );
 
     for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
