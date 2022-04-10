@@ -31,6 +31,7 @@ class AxisVector {
   mapAxis(f = (a, m) => a) { return new AxisVector(f(this.axis, this.magnitude), this.magnitude); }
   mapMag(f = (m, a) => m) { return new AxisVector(this.axis, f(this.magnitude, this.axis)); }
 
+  // * note: both magnitude === 0 =/=> equal
   equals(v) { return this.axis === v.axis && this.magnitude === v.magnitude; }
 }
 function crossProduct(v1, v2) { // ! for AxisVectors only
@@ -129,23 +130,23 @@ function enact(move) {
         op = n => Math.floor(n / cubeSize); // horizontal (wrt 0 top-left)
       }
 
-      // ! todo: generalise to > 2x2 (i.e. n in {0..size-1})
-      let n = undefined;
+      // ! todo: maths, rather than hard-code
+      let n = undefined, nCalc = m => Math.round((cubeSize - 1) / 2 + m - (cubeSize % 2 == 0 ? Math.sign(m) * 0.5 : 0));
       if (move.normal.axis === Y_AXIS) {
-        n = move.normal.magnitude === -1 ? 1 : 0;
+        n = nCalc(-move.normal.magnitude);
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          n = fmProduct.magnitude === -1 ? 1 : 0;
+          n = nCalc(-fmProduct.magnitude);
         } else {
-          n = move.normal.magnitude === -1 ? 0 : 1;
+          n = nCalc(move.normal.magnitude);
         }
       } else {
-        n = fmProduct.magnitude === -1 ? 0 : 1;
+        n = nCalc(fmProduct.magnitude);
       }
 
       let check = i => op(i) === n;
 
-      let nextFace = fmProduct.mapMag(m => m * -move.rotation);
+      let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
 
       // guaranteed to be in order, but may need to be reversed
       let movingElementPairs = faceElements.map((v, i) => ({ v, i })).filter(({ v, i }) => check(i));
@@ -165,7 +166,7 @@ function enact(move) {
       }
       if (reversed) movingElementPairs.reverse();
 
-      newCellElements[faceArr.find(v => v.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
+      newCellElements[faceArr.find(face => face.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
       newCellIndexes[face.name] = movingElementPairs.map(({ _, i }) => i);
     }
   }
@@ -182,12 +183,12 @@ function enact(move) {
 }
 
 let defaultNotation = { // ! only for a 2x2 (or 3x3)
-  R: [new Move(X_AXIS,  1, -1)],
-  L: [new Move(X_AXIS, -1, -1)],
-  U: [new Move(Y_AXIS,  1, -1)],
-  D: [new Move(Y_AXIS, -1, -1)],
-  F: [new Move(Z_AXIS,  1, -1)],
-  B: [new Move(Z_AXIS, -1, -1)],
+  R: [new Move(X_AXIS,  maxCubeOffset, -1)],
+  L: [new Move(X_AXIS, -maxCubeOffset, -1)],
+  U: [new Move(Y_AXIS,  maxCubeOffset, -1)],
+  D: [new Move(Y_AXIS, -maxCubeOffset, -1)],
+  F: [new Move(Z_AXIS,  maxCubeOffset, -1)],
+  B: [new Move(Z_AXIS, -maxCubeOffset, -1)],
 };
 
 function perform(str, options = undefined) {
