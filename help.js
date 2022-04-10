@@ -13,7 +13,8 @@ let helpObj = {
   performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
                "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
 };
-let help = command => {
+
+function help(command = undefined) {
   if (command !== undefined) { // display specific command help
     if (helpObj[command] === undefined) {
       console.log("Command does not exist. Run `help()` for a list of all commands.");
@@ -26,4 +27,4 @@ let help = command => {
   }
 
   return true;
-};
+}

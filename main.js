@@ -6,10 +6,10 @@ let sliders = Object.fromEntries(Object.entries({
   z: "slider_z"
 }).map(([k, v]) => [k, document.getElementById(v)]));
 
-let updateCubeTransform = () => {
+function updateCubeTransform() {
   document.getElementById("cube").style.transform = ["x", "y", "z"].map(
     axisName => `rotate${axisName.toUpperCase()}(${sliders[axisName].value}deg)`
   ).join(" ");
-};
+}
 Object.values(sliders).forEach(v => v.addEventListener("input", updateCubeTransform));
 updateCubeTransform();

@@ -33,12 +33,12 @@ class AxisVector {
 
   equals(v) { return this.axis === v.axis && this.magnitude === v.magnitude; }
 }
-let crossProduct = (v1, v2) => { // ! for AxisVectors only
+function crossProduct(v1, v2) { // ! for AxisVectors only
   const ring = [X_AXIS, Y_AXIS, Z_AXIS];
   let axis = ring.find(v => ![v1.axis, v2.axis].includes(v));
   let magnitudeModifier = ring[(ring.indexOf(v1.axis) + 1) % ring.length] == v2.axis ? 1 : -1;
   return new AxisVector(axis, v1.magnitude * v2.magnitude * magnitudeModifier);
-};
+}
 
 class Move {
   constructor(normalAxis, offset, rotation) {
@@ -60,9 +60,9 @@ let faceArr = [
   { name: "down",   normal: new AxisVector(Y_AXIS, -1) },
 ];
 
-const defaultRing = [0, 1, 3, 2];
+function _getFaceElements(name) { return [...document.querySelectorAll(`#${name} > .cellContainer > *`)]; }
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
-let enact = move => {
+function enact(move) {
   let newCellElements = {}; // e.g. { front: [blue, red] }
   let newCellIndexes = {}; // e.g. { front: [0, 2] }
 
@@ -74,7 +74,7 @@ let enact = move => {
       // perform a walk of each "ring" on the face, exchanging elements
       // todo generalise for multiple rings (2x2 has only one ring)
 
-      let faceElements = document.getElementById(face.name).getElementsByTagName("div");
+      let faceElements = _getFaceElements(face.name);
 
       let ring = [...defaultRing];
       if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
@@ -84,7 +84,7 @@ let enact = move => {
         faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
       faceElements[ring[ring.length - 1]].className = temp;
     } else { // intersecting plane
-      let faceElements = [...document.getElementById(face.name).getElementsByTagName("div")];
+      let faceElements = _getFaceElements(face.name);
 
       let fmProduct = crossProduct(face.normal, move.normal);
 
@@ -146,11 +146,11 @@ let enact = move => {
   // console.log(newCellIndexes);
 
   for (let faceName of Object.keys(newCellElements)) {
-    let faceElements = [...document.getElementById(faceName).getElementsByTagName("div")];
+    let faceElements = _getFaceElements(faceName);
 
     newCellIndexes[faceName].forEach((v, i) => faceElements[v].className = newCellElements[faceName][i]);
   }
-};
+}
 
 let defaultNotation = { // ! only for a 2x2 (or 3x3)
   R: [new Move(X_AXIS,  1, -1)],
@@ -161,7 +161,7 @@ let defaultNotation = { // ! only for a 2x2 (or 3x3)
   B: [new Move(Z_AXIS, -1, -1)],
 };
 
-let perform = (str, options = undefined) => {
+function perform(str, options = undefined) {
   let notationSet = (options?.notationSet ?? defaultNotation);
   let delay = (options?.delay ?? 0);
 
@@ -185,10 +185,11 @@ let perform = (str, options = undefined) => {
       // todo: do delay
     }
   }
-};
+}
 
 // U, L, D, R, F, B
-let rotate = (str, options = undefined) => perform(str, { ...options, notationSet: options?.notationSet ?? {
+function rotate(str, options = undefined) {
+  return perform(str, { ...options, notationSet: options?.notationSet ?? {
   R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
   L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
   U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
@@ -196,9 +197,10 @@ let rotate = (str, options = undefined) => perform(str, { ...options, notationSe
   F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
   B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
 }});
+}
 
 // _isReversed is private
-let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => {
+function performSubs(str, subsGroup, options = undefined, _isReversed = false) {
   // todo split into functions
   if (!_isReversed) {
     for (let i = 0; i < str.length; i++) {
@@ -251,4 +253,4 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
     }
   }
-};
+}
