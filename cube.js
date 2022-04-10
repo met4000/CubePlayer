@@ -179,6 +179,7 @@ let rotate = (str, options = undefined) => perform(str, { ...options, notationSe
 
 // _isReversed is private
 let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => {
+  // todo split into functions
   if (!_isReversed) {
     for (let i = 0; i < str.length; i++) {
       let moveName = str[i];
@@ -198,7 +199,7 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       }
 
       if (sub === undefined) {
-        console.log(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
         continue;
       }
 
@@ -223,7 +224,7 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       let sub = subsGroup[moveName];
 
       if (sub === undefined) {
-        console.log(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
         continue;
       }
 
