@@ -68,18 +68,18 @@ function generateRings() {
   let rings = [], grid = {};
   
   // traverse the grid, assigning indices
-  for (let ringNumber = 0, pos = [0, 0], delta = [1, 0]; !grid[pos]; pos = addPair(pos, delta)) {
+  for (let ringNumber = 0, pos = [0, 0], delta = [1, 0]; grid[pos] === undefined; pos = addPair(pos, delta)) {
     if (rings[ringNumber] === undefined) rings[ringNumber] = [];
     
     let i = pos[0] + pos[1] * cubeSize; // convert pos to grid index
     rings[ringNumber].push(i); // add to ring
-    grid[pos] = true; // mark as visited
+    grid[pos] = ringNumber; // mark as visited
 
     // update direction if "crashing"
     let newPos = addPair(pos, delta);
-    if (!_checkPosBounds(newPos) || grid[newPos]) {
+    if (!_checkPosBounds(newPos) || grid[newPos] !== undefined) {
       delta = [-delta[1], delta[0]]; // right rotation by 90 deg
-      if (grid[newPos]) ringNumber++; // move onto the next ring
+      if (grid[newPos] === ringNumber) ringNumber++; // move onto the next ring
     }
   }
 
@@ -106,7 +106,7 @@ function enact(move) {
       for (let [...ring] of cubeRings) {
         if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
 
-        for (let r = 0; r < cubeSize - 1; r++) {
+        for (let r = 0, r_max = ring.length / 4; r < r_max; r++) {
           let temp = faceElements[ring[0]].className;
           for (let i = 1; i < ring.length; i++)
             faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
@@ -144,11 +144,8 @@ function enact(move) {
         n = nCalc(fmProduct.magnitude);
       }
 
-      let check = i => op(i) === n;
-
-      let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
-
       // guaranteed to be in order, but may need to be reversed
+      let check = i => op(i) === n;
       let movingElementPairs = faceElements.map((v, i) => ({ v, i })).filter(({ v, i }) => check(i));
       
       // ! todo: maths, rather than hard-code
@@ -166,6 +163,8 @@ function enact(move) {
       }
       if (reversed) movingElementPairs.reverse();
 
+      let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
+      
       newCellElements[faceArr.find(face => face.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
       newCellIndexes[face.name] = movingElementPairs.map(({ _, i }) => i);
     }
