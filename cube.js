@@ -51,7 +51,7 @@ function enact(move) {
       let faceElements = _getFaceElements(face.name);
 
       for (let [...ring] of cubeRings) {
-        if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
+        if (face.normal.magnitude * sgn(move.normal.magnitude) * move.rotation < 0) ring.reverse();
 
         for (let r = 0, r_max = ring.length / 4; r < r_max; r++) {
           let temp = faceElements[ring[0]].className;
@@ -78,7 +78,7 @@ function enact(move) {
       }
 
       // ! todo: maths, rather than hard-code
-      let n = undefined, nCalc = m => Math.round((cubeSize - 1) / 2 + m - (cubeSize % 2 == 0 ? Math.sign(m) * 0.5 : 0));
+      let n = undefined, nCalc = m => Math.round((cubeSize - 1) / 2 + m - (cubeSize % 2 == 0 ? sgn(m) * 0.5 : 0));
       if (move.normal.axis === Y_AXIS) {
         n = nCalc(-move.normal.magnitude);
       } else if (face.normal.axis === Y_AXIS) {
@@ -110,7 +110,7 @@ function enact(move) {
       }
       if (reversed) movingElementPairs.reverse();
       
-      let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
+      let nextFace = fmProduct.mapMag(m => sgn(m * -move.rotation));
       
       newCellElements[faceArr.find(face => face.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
       newCellIndexes[face.name] = movingElementPairs.map(({ _, i }) => i);
@@ -237,7 +237,7 @@ function performAdvanced(str, options = undefined) {
 
     let moves = [];
     for (let i = deep ? 0 : slice - 1; i < slice; i++) moves.push(
-      basicNotationAxis[moveName].mapMag(m => Math.sign(m) * (maxCubeOffset - i)).toMove(inverted ? 1 : -1)
+      basicNotationAxis[moveName].mapMag(m => sgn(m) * (maxCubeOffset - i)).toMove(inverted ? 1 : -1)
     );
 
     for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
@@ -271,7 +271,7 @@ function respawn(size = 3) {
   // calculate index helper list
   _indexHelper = [];
   for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
-    if (i == maxCubeOffset) p++;
+    if (i == maxCubeOffset && cubeSize % 2 == 0) p++;
     _indexHelper.push(p);
   }
 
@@ -283,7 +283,7 @@ function respawn(size = 3) {
   );
   // rotations
   Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
-    ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, -1))
+    ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, (v < 0 ? -1 : 1) * -1))
   );
 }
 respawn();
