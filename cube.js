@@ -1,58 +1,6 @@
-const cubeSize = 4; // todo: add function to change cube size
-const maxCubeOffset = Math.floor(cubeSize / 2);
-document.getElementById("cube").style.setProperty("--size", cubeSize);
-
-
-// * setup cube cells *
-
-const faceMap = {
-  front:  `<div class="blue"></div>`,
-  back:   `<div class="green"></div>`,
-  right:  `<div class="red"></div>`,
-  left:   `<div class="orange"></div>`,
-  top:    `<div class="yellow"></div>`,
-  down:   `<div class="white"></div>`,
-};
-[...document.getElementsByClassName("face")].forEach(face => {
-  let cellContainer = face.getElementsByClassName("cellContainer")[0];
-  cellContainer.innerHTML = Array(cubeSize * cubeSize).fill(faceMap[face.id]).join("");
-});
-
+let cubeSize, maxCubeOffset, cubeRings, basicNotation, _indexHelper;
 
 // * cube logic *
-
-const X_AXIS = "x", Y_AXIS = "y", Z_AXIS = "z";
-class AxisVector {
-  constructor(axis, magnitude) {
-    this.axis = axis;
-    this.magnitude = magnitude;
-  }
-
-  mapAxis(f = (a, m) => a) { return new AxisVector(f(this.axis, this.magnitude), this.magnitude); }
-  mapMag(f = (m, a) => m) { return new AxisVector(this.axis, f(this.magnitude, this.axis)); }
-
-  // * note: both magnitude === 0 =/=> equal
-  equals(v) { return this.axis === v.axis && this.magnitude === v.magnitude; }
-
-  toMove(rotation) { return new Move(this.axis, this.magnitude, rotation); }
-}
-function crossProduct(v1, v2) { // ! for AxisVectors only
-  const ring = [X_AXIS, Y_AXIS, Z_AXIS];
-  let axis = ring.find(v => ![v1.axis, v2.axis].includes(v));
-  let magnitudeModifier = ring[(ring.indexOf(v1.axis) + 1) % ring.length] == v2.axis ? 1 : -1;
-  return new AxisVector(axis, v1.magnitude * v2.magnitude * magnitudeModifier);
-}
-
-class Move {
-  constructor(normalAxis, offset, rotation) {
-    this.normal = new AxisVector(normalAxis, offset);
-    this.rotation = rotation; // must be 1 or -1
-  }
-
-  reversed() {
-    return new Move(this.normal.axis, this.normal.magnitude, -this.rotation);
-  }
-}
 
 let faceArr = [
   { name: "front",  normal: new AxisVector(Z_AXIS,  1) },
@@ -62,8 +10,6 @@ let faceArr = [
   { name: "top",    normal: new AxisVector(Y_AXIS,  1) },
   { name: "down",   normal: new AxisVector(Y_AXIS, -1) },
 ];
-
-function addPair(p1, p2) { return [p1[0] + p2[0], p1[1] + p2[1]]; }
 
 function _checkPosBounds(p) { return Math.min(...p) >= 0 && Math.max(...p) < cubeSize; }
 function generateRings() {
@@ -87,7 +33,6 @@ function generateRings() {
 
   return rings;
 }
-let cubeRings = generateRings();
 
 function _getFaceElements(name) { return [...document.querySelectorAll(`#${name} > .cellContainer > *`)]; }
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
@@ -183,12 +128,6 @@ function enact(move) {
   }
 }
 
-let _indexHelper = [];
-for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
-  if (i == maxCubeOffset) p++;
-  _indexHelper.push(p);
-}
-
 let basicNotationAxis = {
   R: new AxisVector(X_AXIS,  1),
   L: new AxisVector(X_AXIS, -1),
@@ -197,16 +136,6 @@ let basicNotationAxis = {
   F: new AxisVector(Z_AXIS,  1),
   B: new AxisVector(Z_AXIS, -1),
 };
-
-let basicNotation = {}; // * intended for a 2x2 (or 3x3) *
-// standard moves
-Object.entries(basicNotationAxis).forEach(
-  ([k, v]) => basicNotation[k] = [v.mapMag(m => m * maxCubeOffset).toMove(-1)]
-);
-// rotations
-Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
-  ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, -1))
-);
 
 // assumes all moves in one long string
 function perform(str, options = undefined) {
@@ -234,7 +163,6 @@ function perform(str, options = undefined) {
     }
   }
 }
-
 
 /**
  * @param {*} _isInverted SHOULD NOT BE USED PUBLICLY
@@ -315,3 +243,47 @@ function performAdvanced(str, options = undefined) {
     for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
   }
 }
+
+// * setup/spawn cube *
+
+const faceMap = {
+  front:  `<div class="blue"></div>`,
+  back:   `<div class="green"></div>`,
+  right:  `<div class="red"></div>`,
+  left:   `<div class="orange"></div>`,
+  top:    `<div class="yellow"></div>`,
+  down:   `<div class="white"></div>`,
+};
+function respawn(size = 3) {
+  cubeSize = size;
+  maxCubeOffset = Math.floor(cubeSize / 2);
+  document.getElementById("cube").style.setProperty("--size", cubeSize);
+
+  // make the cube cells
+  [...document.getElementsByClassName("face")].forEach(face => {
+    let cellContainer = face.getElementsByClassName("cellContainer")[0];
+    cellContainer.innerHTML = Array(cubeSize * cubeSize).fill(faceMap[face.id]).join("");
+  });
+
+  // calculate rings (for rotating faces)
+  cubeRings = generateRings();
+
+  // calculate index helper list
+  _indexHelper = [];
+  for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
+    if (i == maxCubeOffset) p++;
+    _indexHelper.push(p);
+  }
+
+  // setup basic notation
+  basicNotation = {};
+  // standard moves
+  Object.entries(basicNotationAxis).forEach(
+    ([k, v]) => basicNotation[k] = [v.mapMag(m => m * maxCubeOffset).toMove(-1)]
+  );
+  // rotations
+  Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
+    ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, -1))
+  );
+}
+respawn();
