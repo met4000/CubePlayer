@@ -1,5 +1,25 @@
-const cubeSize = 2; // todo
+const cubeSize = 3; // todo
 const maxCubeOffset = Math.floor(cubeSize / 2);
+document.getElementById("cube").style.setProperty("--size", cubeSize);
+
+
+// * setup cube cells *
+
+const faceMap = {
+  front:  `<div class="blue"></div>`,
+  back:   `<div class="green"></div>`,
+  right:  `<div class="red"></div>`,
+  left:   `<div class="orange"></div>`,
+  top:    `<div class="yellow"></div>`,
+  down:   `<div class="white"></div>`,
+};
+[...document.getElementsByClassName("face")].forEach(face => {
+  let cellContainer = face.getElementsByClassName("cellContainer")[0];
+  cellContainer.innerHTML = Array(cubeSize * cubeSize).fill(faceMap[face.id]).join("");
+});
+
+
+// * cube logic *
 
 const X_AXIS = "x", Y_AXIS = "y", Z_AXIS = "z";
 class AxisVector {
@@ -231,36 +251,4 @@ let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => 
       for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
     }
   }
-};
-
-let helpObj = {
-  help: "help(command: string = undefined) // " +
-        "Displays this help message. If `command` is specified, only " +
-        "displays the help message for the specified command, or an error message if it does not exist.",
-  perform: "perform(str: string, options: Object = undefined) // " +
-           "Performs the sequence `str` on the cube. `options` is an object containing " +
-           "`\"notationSet\"` (defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
-  rotate: "rotate(str: string, options: Object = undefined) // " +
-          "Performs the rotation sequence `str` on the cube. `rotate(...)` is an alias for `perform(...)` " +
-          "under the hood, with the default `\"notationSet\"` changed to one that rotates the cube " +
-          "towards the face specified. `\"F\"` and `\"B\"` rotate the cube clockwise, " +
-          "respective to the face specified.",
-  performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
-               "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
-  toggleButtons: "toggleButtons() // " +
-                 "Toggles the on-cube move buttons on/off. May cause problems when active.",
-};
-let help = command => {
-  if (command !== undefined) { // display specific command help
-    if (helpObj[command] === undefined) {
-      console.log("Command does not exist. Run `help()` for a list of all commands.");
-      return false;
-    }
-
-    console.log(helpObj[command]);
-  } else { // display all command help
-    Object.values(helpObj).forEach(v => console.log(v));
-  }
-
-  return true;
 };
