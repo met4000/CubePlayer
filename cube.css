@@ -1,6 +1,7 @@
 #cube {
-  --unit: 120px;
+  --face-size: 260px;
   --size: 1; /** set in javascript **/
+  --unit: calc(var(--face-size) / var(--size));
   --gap: 2px;
 
   display: flex;
