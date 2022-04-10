@@ -2,6 +2,8 @@ let helpObj = {
   help: "help(command: string = undefined) // " +
         "Displays this help message. If `command` is specified, only " +
         "displays the help message for the specified command, or an error message if it does not exist.",
+  respawn: "respawn(size: number = 3) // " +
+           "Removes the current cube, and spawns a new one with the given size (in a solved state).",
   perform: "perform(str: string, options: Object = undefined) // " +
            "Performs the sequence `str` on the cube. Assumes the sequence is a list of basic moves " +
            "and/or rotations, with no spaces. `options` is an object containing `\"notationSet\"` " +
