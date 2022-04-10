@@ -5,11 +5,6 @@ let helpObj = {
   perform: "perform(str: string, options: Object = undefined) // " +
            "Performs the sequence `str` on the cube. `options` is an object containing " +
            "`\"notationSet\"` (defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
-  rotate: "rotate(str: string, options: Object = undefined) // " +
-          "Performs the rotation sequence `str` on the cube. `rotate(...)` is an alias for `perform(...)` " +
-          "under the hood, with the default `\"notationSet\"` changed to one that rotates the cube " +
-          "towards the face specified. `\"F\"` and `\"B\"` rotate the cube clockwise, " +
-          "respective to the face specified.",
   performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
                "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
 };

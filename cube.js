@@ -181,13 +181,25 @@ function enact(move) {
   }
 }
 
+let _indexHelper = [];
+for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
+  if (i == maxCubeOffset) p++;
+  _indexHelper.push(p);
+}
+
 let defaultNotation = { // ! only for a 2x2 (or 3x3)
+  // standard moves
   R: [new Move(X_AXIS,  maxCubeOffset, -1)],
   L: [new Move(X_AXIS, -maxCubeOffset, -1)],
   U: [new Move(Y_AXIS,  maxCubeOffset, -1)],
   D: [new Move(Y_AXIS, -maxCubeOffset, -1)],
   F: [new Move(Z_AXIS,  maxCubeOffset, -1)],
   B: [new Move(Z_AXIS, -maxCubeOffset, -1)],
+
+  // rotations
+  x: [..._indexHelper].map(v => new Move(X_AXIS, v, -1)),
+  y: [..._indexHelper].map(v => new Move(Y_AXIS, v, -1)),
+  z: [..._indexHelper].map(v => new Move(Z_AXIS, v, -1)),
 };
 
 function perform(str, options = undefined) {
@@ -214,18 +226,6 @@ function perform(str, options = undefined) {
       // todo: do delay
     }
   }
-}
-
-// U, L, D, R, F, B
-function rotate(str, options = undefined) {
-  return perform(str, { ...options, notationSet: options?.notationSet ?? {
-    R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
-    L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
-    U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
-    D: [new Move(X_AXIS,  1, -1), new Move(X_AXIS, -1,  1)],
-    F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
-    B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
-  }});
 }
 
 // _isReversed is private
