@@ -34,3 +34,5 @@ class Move {
 }
 
 function addPair(p1, p2) { return [p1[0] + p2[0], p1[1] + p2[1]]; }
+
+function sgn(n) { return Math.sign(1 / n); } // returns +/- 1 for +/- 0
