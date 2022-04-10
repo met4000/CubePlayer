@@ -60,6 +60,32 @@ let faceArr = [
   { name: "down",   normal: new AxisVector(Y_AXIS, -1) },
 ];
 
+function addPair(p1, p2) { return [p1[0] + p2[0], p1[1] + p2[1]]; }
+
+function _checkPosBounds(p) { return Math.min(...p) >= 0 && Math.max(...p) < cubeSize; }
+function generateRings() {
+  let rings = [], grid = {};
+  
+  // traverse the grid, assigning indices
+  for (let ringNumber = 0, pos = [0, 0], delta = [1, 0]; !grid[pos]; pos = addPair(pos, delta)) {
+    if (rings[ringNumber] === undefined) rings[ringNumber] = [];
+    
+    let i = pos[0] + pos[1] * cubeSize; // convert pos to grid index
+    rings[ringNumber].push(i); // add to ring
+    grid[pos] = true; // mark as visited
+
+    // update direction if "crashing"
+    let newPos = addPair(pos, delta);
+    if (!_checkPosBounds(newPos) || grid[newPos]) {
+      delta = [-delta[1], delta[0]]; // right rotation by 90 deg
+      if (grid[newPos]) ringNumber++; // move onto the next ring
+    }
+  }
+
+  return rings;
+}
+let cubeRings = generateRings();
+
 function _getFaceElements(name) { return [...document.querySelectorAll(`#${name} > .cellContainer > *`)]; }
 // todo: exchange elements instead of exchanging classes (allows for e.g. pictures/text)
 function enact(move) {
@@ -76,13 +102,16 @@ function enact(move) {
 
       let faceElements = _getFaceElements(face.name);
 
-      let ring = [...defaultRing];
-      if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
+      for (let [...ring] of cubeRings) {
+        if (face.normal.magnitude * Math.sign(move.normal.magnitude) * move.rotation < 0) ring.reverse();
 
-      let temp = faceElements[ring[0]].className;
-      for (let i = 1; i < ring.length; i++)
-        faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
-      faceElements[ring[ring.length - 1]].className = temp;
+        for (let r = 0; r < cubeSize - 1; r++) {
+          let temp = faceElements[ring[0]].className;
+          for (let i = 1; i < ring.length; i++)
+            faceElements[ring[i - 1]].className = faceElements[ring[i]].className;
+          faceElements[ring[ring.length - 1]].className = temp;
+        }
+      }
     } else { // intersecting plane
       let faceElements = _getFaceElements(face.name);
 
@@ -190,13 +219,13 @@ function perform(str, options = undefined) {
 // U, L, D, R, F, B
 function rotate(str, options = undefined) {
   return perform(str, { ...options, notationSet: options?.notationSet ?? {
-  R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
-  L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
-  U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
-  D: [new Move(X_AXIS,  1, -1), new Move(X_AXIS, -1,  1)],
-  F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
-  B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
-}});
+    R: [new Move(Y_AXIS,  1, -1), new Move(Y_AXIS, -1,  1)],
+    L: [new Move(Y_AXIS,  1,  1), new Move(Y_AXIS, -1, -1)],
+    U: [new Move(X_AXIS,  1,  1), new Move(X_AXIS, -1, -1)],
+    D: [new Move(X_AXIS,  1, -1), new Move(X_AXIS, -1,  1)],
+    F: [new Move(Z_AXIS,  1, -1), new Move(Z_AXIS, -1,  1)],
+    B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
+  }});
 }
 
 // _isReversed is private
