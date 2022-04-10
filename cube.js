@@ -1,4 +1,4 @@
-const cubeSize = 3; // todo
+const cubeSize = 4; // todo: add function to change cube size
 const maxCubeOffset = Math.floor(cubeSize / 2);
 document.getElementById("cube").style.setProperty("--size", cubeSize);
 
@@ -33,6 +33,8 @@ class AxisVector {
 
   // * note: both magnitude === 0 =/=> equal
   equals(v) { return this.axis === v.axis && this.magnitude === v.magnitude; }
+
+  toMove(rotation) { return new Move(this.axis, this.magnitude, rotation); }
 }
 function crossProduct(v1, v2) { // ! for AxisVectors only
   const ring = [X_AXIS, Y_AXIS, Z_AXIS];
@@ -143,7 +145,7 @@ function enact(move) {
       } else {
         n = nCalc(fmProduct.magnitude);
       }
-
+      
       // guaranteed to be in order, but may need to be reversed
       let check = i => op(i) === n;
       let movingElementPairs = faceElements.map((v, i) => ({ v, i })).filter(({ v, i }) => check(i));
@@ -162,7 +164,7 @@ function enact(move) {
         reversed = fmProduct.magnitude > 0;
       }
       if (reversed) movingElementPairs.reverse();
-
+      
       let nextFace = fmProduct.mapMag(m => Math.sign(m * -move.rotation));
       
       newCellElements[faceArr.find(face => face.normal.equals(nextFace)).name] = movingElementPairs.map(({ v, _ }) => v.className);
@@ -187,23 +189,28 @@ for (let i = 0, p = -maxCubeOffset; i < cubeSize; i++, p++) {
   _indexHelper.push(p);
 }
 
-let defaultNotation = { // ! only for a 2x2 (or 3x3)
-  // standard moves
-  R: [new Move(X_AXIS,  maxCubeOffset, -1)],
-  L: [new Move(X_AXIS, -maxCubeOffset, -1)],
-  U: [new Move(Y_AXIS,  maxCubeOffset, -1)],
-  D: [new Move(Y_AXIS, -maxCubeOffset, -1)],
-  F: [new Move(Z_AXIS,  maxCubeOffset, -1)],
-  B: [new Move(Z_AXIS, -maxCubeOffset, -1)],
-
-  // rotations
-  x: [..._indexHelper].map(v => new Move(X_AXIS, v, -1)),
-  y: [..._indexHelper].map(v => new Move(Y_AXIS, v, -1)),
-  z: [..._indexHelper].map(v => new Move(Z_AXIS, v, -1)),
+let basicNotationAxis = {
+  R: new AxisVector(X_AXIS,  1),
+  L: new AxisVector(X_AXIS, -1),
+  U: new AxisVector(Y_AXIS,  1),
+  D: new AxisVector(Y_AXIS, -1),
+  F: new AxisVector(Z_AXIS,  1),
+  B: new AxisVector(Z_AXIS, -1),
 };
 
+let basicNotation = {}; // * intended for a 2x2 (or 3x3) *
+// standard moves
+Object.entries(basicNotationAxis).forEach(
+  ([k, v]) => basicNotation[k] = [v.mapMag(m => m * maxCubeOffset).toMove(-1)]
+);
+// rotations
+Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
+  ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, -1))
+);
+
+// assumes all moves in one long string
 function perform(str, options = undefined) {
-  let notationSet = (options?.notationSet ?? defaultNotation);
+  let notationSet = (options?.notationSet ?? basicNotation);
   let delay = (options?.delay ?? 0);
 
   for (let i = 0; i < str.length; i++) {
@@ -228,17 +235,20 @@ function perform(str, options = undefined) {
   }
 }
 
-// _isReversed is private
-function performSubs(str, subsGroup, options = undefined, _isReversed = false) {
+
+/**
+ * @param {*} _isInverted SHOULD NOT BE USED PUBLICLY
+ */
+function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
   // todo split into functions
-  if (!_isReversed) {
+  if (!_isInverted) {
     for (let i = 0; i < str.length; i++) {
       let moveName = str[i];
       let sub = subsGroup[moveName];
 
-      let reversed = false;
-      if (str[i + 1] === "'") { // i.e. reversed
-        reversed = true;
+      let inverted = false;
+      if (str[i + 1] === "'") { // i.e. inverted
+        inverted = true;
         i++;
       }
       
@@ -250,11 +260,11 @@ function performSubs(str, subsGroup, options = undefined, _isReversed = false) {
       }
 
       if (sub === undefined) {
-        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${inverted?"'":""}${occurrences}`, options);
         continue;
       }
 
-      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, inverted);
     }
   } else {
     for (let i = str.length - 1; i >= 0; i--) {
@@ -265,9 +275,9 @@ function performSubs(str, subsGroup, options = undefined, _isReversed = false) {
         i--;
       }
 
-      let reversed = true;
-      if (str[i] === "'") { // i.e. reversed
-        reversed = false;
+      let inverted = true;
+      if (str[i] === "'") { // i.e. inverted
+        inverted = false;
         i--;
       }
 
@@ -275,11 +285,35 @@ function performSubs(str, subsGroup, options = undefined, _isReversed = false) {
       let sub = subsGroup[moveName];
 
       if (sub === undefined) {
-        perform(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        perform(`${moveName}${inverted ? "'" : ""}${occurrences}`, options);
         continue;
       }
 
-      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, inverted);
     }
+  }
+}
+
+// assumes moves in space separated string
+// todo: advanced (3x3/4x4 etc.) notation
+function performAdvanced(str, options = undefined) {
+  let moves = str.split(" ");
+
+  for (let move of moves) {
+    // standard properties
+    let moveName = /^(?:\d+)?([A-Z])[w']{0,2}(?:\d+)?$/.exec(move)[1]; // ! todo: improve stability
+    let inverted = /'/.test(move);
+    let occurrences = (/(\d+)$/.exec(move) ?? [])[1] ?? 1;
+
+    // advanced properties
+    let deep = /w/.test(move);
+    let slice = (/^(\d+)/.exec(move) ?? [])[1] ?? 1;
+
+    let moves = [];
+    for (let i = deep ? 0 : slice - 1; i < slice; i++) moves.push(
+      basicNotationAxis[moveName].mapMag(m => Math.sign(m) * maxCubeOffset - i).toMove(inverted ? 1 : -1)
+    );
+
+    for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
   }
 }

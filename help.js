@@ -3,10 +3,15 @@ let helpObj = {
         "Displays this help message. If `command` is specified, only " +
         "displays the help message for the specified command, or an error message if it does not exist.",
   perform: "perform(str: string, options: Object = undefined) // " +
-           "Performs the sequence `str` on the cube. `options` is an object containing " +
-           "`\"notationSet\"` (defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
+           "Performs the sequence `str` on the cube. Assumes the sequence is a list of basic moves " +
+           "and/or rotations, with no spaces. `options` is an object containing `\"notationSet\"` " +
+           "(defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
   performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
-               "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
+               "Wrapper for perform(...), does (recursive) string substitution on `str` based on `subsGroup`",
+  performAdvanced: "performAdvanced(str: string, options: Object = undefined) // " +
+                   "Performs the space-separated sequence of moves in `str`. Recognises big cube " +
+                   "notation such as `\"3Fw2\"` (advanced notation such as `\"f\"` is still TODO). " +
+                   "`options` is the same as perform(...).",
 };
 
 function help(command = undefined) {
