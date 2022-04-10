@@ -177,20 +177,77 @@ let rotate = (str, options = undefined) => perform(str, { ...options, notationSe
   B: [new Move(Z_AXIS,  1,  1), new Move(Z_AXIS, -1, -1)],
 }});
 
+// _isReversed is private
+let performSubs = (str, subsGroup, options = undefined, _isReversed = false) => {
+  if (!_isReversed) {
+    for (let i = 0; i < str.length; i++) {
+      let moveName = str[i];
+      let sub = subsGroup[moveName];
+
+      let reversed = false;
+      if (str[i + 1] === "'") { // i.e. reversed
+        reversed = true;
+        i++;
+      }
+      
+      // ! only catches single digits; todo: increase
+      let occurrences = 1;
+      if (/\d/.test(str[i + 1])) { // i.e. repeated
+        occurrences = str[i + 1];
+        i++;
+      }
+
+      if (sub === undefined) {
+        console.log(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        continue;
+      }
+
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+    }
+  } else {
+    for (let i = str.length - 1; i >= 0; i--) {
+      // ! only catches single digits; todo: increase
+      let occurrences = 1;
+      if (/\d/.test(str[i])) { // i.e. repeated
+        occurrences = str[i];
+        i--;
+      }
+
+      let reversed = true;
+      if (str[i] === "'") { // i.e. reversed
+        reversed = false;
+        i--;
+      }
+
+      let moveName = str[i];
+      let sub = subsGroup[moveName];
+
+      if (sub === undefined) {
+        console.log(`${moveName}${reversed?"'":""}${occurrences}`, options);
+        continue;
+      }
+
+      for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, reversed);
+    }
+  }
+};
+
 let helpObj = {
   help: "help(command: string = undefined) // " +
         "Displays this help message. If `command` is specified, only " +
         "displays the help message for the specified command, or an error message if it does not exist.",
   perform: "perform(str: string, options: Object = undefined) // " +
-           "performs the sequence `str` on the cube. `options` is an object containing " +
+           "Performs the sequence `str` on the cube. `options` is an object containing " +
            "`\"notationSet\"` (defaults to Singmaster notation) and/or `\"delay\"` (defaults to 0).",
   rotate: "rotate(str: string, options: Object = undefined) // " +
-          "performs the rotation sequence `str` on the cube. `rotate(...)` is an alias for `perform(...)` " +
+          "Performs the rotation sequence `str` on the cube. `rotate(...)` is an alias for `perform(...)` " +
           "under the hood, with the default `\"notationSet\"` changed to one that rotates the cube " +
           "towards the face specified. `\"F\"` and `\"B\"` rotate the cube clockwise, " +
           "respective to the face specified.",
+  performSubs: "performSubs(str: string, subsGroup: Object, options: Object = undefined) // " +
+               "Wrapper for perform, that does (recursive) string substitution on `str` based on `subsGroup`",
   toggleButtons: "toggleButtons() // " +
-                 "toggles the on-cube move buttons on/off. May cause problems when active.",
+                 "Toggles the on-cube move buttons on/off. May cause problems when active.",
 };
 let help = command => {
   if (command !== undefined) { // display specific command help
