@@ -98,15 +98,15 @@ function enact(move) {
       // ! todo: maths, rather than hard-code
       let reversed = undefined;
       if (move.normal.axis === Y_AXIS) {
-        reversed = move.normal.magnitude > 0;
+        reversed = sgn(move.normal.magnitude) > 0;
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          reversed = fmProduct.magnitude < 0;
+          reversed = sgn(fmProduct.magnitude) < 0;
         } else {
-          reversed = move.normal.magnitude < 0;
+          reversed = sgn(move.normal.magnitude) < 0;
         }
       } else {
-        reversed = fmProduct.magnitude > 0;
+        reversed = sgn(fmProduct.magnitude) > 0;
       }
       if (reversed) movingElementPairs.reverse();
       
@@ -164,6 +164,7 @@ function perform(str, options = undefined) {
   }
 }
 
+// todo: improve
 /**
  * @param {*} _isInverted SHOULD NOT BE USED PUBLICLY
  */
@@ -222,23 +223,45 @@ function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
   }
 }
 
+// todo: actually add `options` support
+// todo: advanced notation (e.g. centre slices)
+// todo: generalise all `perform`s to use the same move processing
+// todo: make `perform` `performBasic`, and `performAdvanced` `perform`
 // assumes moves in space separated string
-// todo: advanced (3x3/4x4 etc.) notation
 function performAdvanced(str, options = undefined) {
-  for (let move of str.split(" ")) {
-    // standard properties
-    let moveName = /^(?:\d+)?([A-Z])[w']{0,2}(?:\d+)?$/.exec(move)[1]; // ! todo: improve stability
-    let inverted = /'/.test(move);
-    let occurrences = parseInt((/(\d+)$/.exec(move) ?? [])[1] ?? 1);
+  for (let moveStr of str.split(" ")) {
+    // basic properties
+    let basicPropertiesArr = /^(\w+)(')?(\d+)?$/.exec(moveStr);
+    if (!basicPropertiesArr)
+      throw new Error(`unable to process notation: \`${moveStr}\``);
+    let basicMoveName = basicPropertiesArr[1];
+    let inverted = !!basicPropertiesArr[2];
+    let occurrences = parseInt(basicPropertiesArr[3] ?? 1);
+
+    if (basicNotation[basicMoveName] !== undefined) {
+      perform(moveStr); // ? could perform parsing manually
+      continue;
+    }
 
     // advanced properties
-    let deep = /w/.test(move);
-    let slice = parseInt((/^(\d+)/.exec(move) ?? [])[1] ?? 1);
+    let advancedPropertiesArr = /^(\d+)?(\w)(w)?$/.exec(basicMoveName);
+    if (!basicPropertiesArr)
+      throw new Error(`unable to process notation: \`${moveStr}\`, specifically: \`${basicMoveName}\``);
+    let slice = parseInt(advancedPropertiesArr[1] ?? 1);
+    let advMoveName = advancedPropertiesArr[2];
+    let deep = !!advancedPropertiesArr[3];
 
     let moves = [];
-    for (let i = deep ? 0 : slice - 1; i < slice; i++) moves.push(
-      basicNotationAxis[moveName].mapMag(m => sgn(m) * (maxCubeOffset - i)).toMove(inverted ? 1 : -1)
-    );
+    for (let i = deep ? 0 : slice - 1; i < slice; i++) {
+      let adjAxis = basicNotationAxis[advMoveName].mapMag(m => sgn(m) * (maxCubeOffset - i));
+      let move = adjAxis.toMove(
+        sgn_b(inverted)
+        * (maxCubeOffset - i == 0 ? sgn(adjAxis.magnitude) : 1) // account for the centre of the cube
+        * sgn(maxCubeOffset - i) // account for going past the centre of the cube
+      );
+
+      moves.push(move);
+    }
 
     for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
   }
@@ -283,7 +306,7 @@ function respawn(size = 3) {
   );
   // rotations
   Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
-    ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, (v < 0 ? -1 : 1) * -1))
+    ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, sgn_b(v < 0)))
   );
 }
 respawn();
