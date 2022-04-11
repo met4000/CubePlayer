@@ -98,15 +98,15 @@ function enact(move) {
       // ! todo: maths, rather than hard-code
       let reversed = undefined;
       if (move.normal.axis === Y_AXIS) {
-        reversed = move.normal.magnitude > 0;
+        reversed = sgn(move.normal.magnitude) > 0;
       } else if (face.normal.axis === Y_AXIS) {
         if (move.normal.axis === X_AXIS) {
-          reversed = fmProduct.magnitude < 0;
+          reversed = sgn(fmProduct.magnitude) < 0;
         } else {
-          reversed = move.normal.magnitude < 0;
+          reversed = sgn(move.normal.magnitude) < 0;
         }
       } else {
-        reversed = fmProduct.magnitude > 0;
+        reversed = sgn(fmProduct.magnitude) > 0;
       }
       if (reversed) movingElementPairs.reverse();
       
