@@ -1,4 +1,4 @@
-let cubeSize, maxCubeOffset, cubeRings, basicNotation, _indexHelper;
+let cubeSize, maxCubeOffset, cubeRings, basicNotation, _indexHelper, counterMap;
 
 // * cube logic *
 
@@ -148,20 +148,27 @@ function perform(str, options = undefined) {
 
     if (str[i+1] === "'") { // i.e. reversed
       moves = moves.map(move => move.reversed());
+      moves.reverse();
       i++;
     }
     
-    if (/\d/.test(str[i+1])) { // i.e. repeated
-      moves = Array.from({length: str[i+1]}, () => moves).reduce((r, v) => r.concat(v));
+    let occurrences = 1;
+    if (/\d/.test(str[i + 1])) { // i.e. repeated
+      occurrences = parseInt(str[i + 1]);
       i++;
     }
 
-    moves.forEach(move => enact(move));
+    for (let i = 0; i < occurrences; i++) {
+      moves.forEach(move => enact(move));
+      _increaseCounters(1);
+    }
 
     if (delay > 0) {
       // todo: do delay
     }
   }
+
+  return getCounter();
 }
 
 // todo: improve
@@ -221,6 +228,15 @@ function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
       for (let i = 0; i < occurrences; i++) performSubs(sub, subsGroup, options, inverted);
     }
   }
+
+  return getCounter();
+}
+
+function _notationProcessingErrHelper(moveStr, specific) {
+  let msg = `unable to process notation: \`${moveStr}\``;
+  if (moveStr !== specific) msg += `, specifically: \`${specific}\``;
+
+  return msg;
 }
 
 // todo: actually add `options` support
@@ -229,27 +245,49 @@ function performSubs(str, subsGroup, options = undefined, _isInverted = false) {
 // todo: make `perform` `performBasic`, and `performAdvanced` `perform`
 // assumes moves in space separated string
 function performAdvanced(str, options = undefined) {
+  let moveQueue = [], moveCounter = 0;
+
   for (let moveStr of str.split(" ")) {
-    // basic properties
+    // * basic properties *
+
     let basicPropertiesArr = /^(\w+)(')?(\d+)?$/.exec(moveStr);
-    if (!basicPropertiesArr)
-      throw new Error(`unable to process notation: \`${moveStr}\``);
+    if (!basicPropertiesArr) throw new Error(_notationProcessingErrHelper(moveStr, moveStr));
+    
     let basicMoveName = basicPropertiesArr[1];
+    
     let inverted = !!basicPropertiesArr[2];
+    
     let occurrences = parseInt(basicPropertiesArr[3] ?? 1);
 
     if (basicNotation[basicMoveName] !== undefined) {
-      perform(moveStr); // ? could perform parsing manually
+      let moves = [...basicNotation[basicMoveName]];
+
+      if (inverted) {
+        moves = moves.map(move => move.reversed());
+        moves.reverse();
+      }
+
+      moveQueue = moveQueue.concat(moves);
+      moveCounter += occurrences;
+
       continue;
     }
 
-    // advanced properties
+    
+    // * advanced properties *
+
     let advancedPropertiesArr = /^(\d+)?(\w)(w)?$/.exec(basicMoveName);
-    if (!basicPropertiesArr)
-      throw new Error(`unable to process notation: \`${moveStr}\`, specifically: \`${basicMoveName}\``);
+    if (!advancedPropertiesArr) throw new Error(_notationProcessingErrHelper(moveStr, basicMoveName));
+    
     let slice = parseInt(advancedPropertiesArr[1] ?? 1);
+    
     let advMoveName = advancedPropertiesArr[2];
+    if (!basicNotationAxis[advMoveName]) throw new Error(_notationProcessingErrHelper(moveStr, advMoveName));
+    
     let deep = !!advancedPropertiesArr[3];
+
+
+    // * (advanced move) move construction *
 
     let moves = [];
     for (let i = deep ? 0 : slice - 1; i < slice; i++) {
@@ -263,9 +301,20 @@ function performAdvanced(str, options = undefined) {
       moves.push(move);
     }
 
-    for (let i = 0; i < occurrences; i++) moves.forEach(move => enact(move));
+    moveQueue = moveQueue.concat(moves);
+    moveCounter += occurrences;
   }
+
+  // realise moves
+  moveQueue.forEach(move => enact(move));
+  _increaseCounters(moveCounter);
+
+  return getCounter();
 }
+
+function _increaseCounters(n) { counterMap.forEach((v, id, m) => m.set(id, v + n)); }
+function startCounter(id = 1) { counterMap.set(id, 0); }
+function getCounter(id = 1) { return counterMap.get(id); }
 
 // * setup/spawn cube *
 
@@ -308,5 +357,8 @@ function respawn(size = 3) {
   Object.entries({ x: X_AXIS, y: Y_AXIS, z: Z_AXIS }).forEach(
     ([k, axis]) => basicNotation[k] = [..._indexHelper].map(v => new Move(axis, v, sgn_b(v < 0)))
   );
+
+  // init/reset move counter
+  counterMap = new Map();
 }
 respawn();
