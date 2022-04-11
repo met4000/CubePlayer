@@ -14,6 +14,12 @@ let helpObj = {
                    "Performs the space-separated sequence of moves in `str`. Recognises big cube " +
                    "notation such as `\"3Fw2\"` (advanced notation such as `\"f\"` is still TODO). " +
                    "`options` is the same as perform(...).",
+  startCounter: "startCounter(id: any = 1) // " +
+                "Starts (or restarts) counting the number of moves made. Use different `id`s to " +
+                "make multiple simultaneous counters. See getCounter(...).",
+  getCounter: "getCounter(id: any = 1) // " +
+              "Gets the number of moves made since the respective startCounter(...) call to " +
+              "the counter with the same `id`, or undefined if the counter has not been started.",
 };
 
 function help(command = undefined) {
